@@ -20,8 +20,19 @@ export async function calculatePredictionPoints(prediction, match) {
   let points = 0;
 
   // Base scoring
-  const actualOutcome = actualHome > actualAway ? 'home' : actualHome < actualAway ? 'away' : 'draw';
-  const predOutcome = predHome > predAway ? 'home' : predHome < predAway ? 'away' : 'draw';
+  const actualOutcome =
+    actualHome > actualAway
+      ? 'home'
+      : actualHome < actualAway
+      ? 'away'
+      : 'draw';
+
+  const predOutcome =
+    predHome > predAway
+      ? 'home'
+      : predHome < predAway
+      ? 'away'
+      : 'draw';
 
   if (actualOutcome === predOutcome) {
     points += 3;
@@ -29,7 +40,10 @@ export async function calculatePredictionPoints(prediction, match) {
 
   if (actualHome === predHome && actualAway === predAway) {
     points += 5;
-  } else if (Math.abs(actualHome - actualAway) === Math.abs(predHome - predAway)) {
+  } else if (
+    Math.abs(actualHome - actualAway) ===
+    Math.abs(predHome - predAway)
+  ) {
     points += 2;
   }
 
@@ -37,30 +51,54 @@ export async function calculatePredictionPoints(prediction, match) {
   const multiplier = PHASE_MULTIPLIERS[match.stage] || 1.0;
   points = Math.floor(points * multiplier);
 
-  // Chain bonuses (simplified for production)
-  const user = await prisma.user.findUnique({ where: { id: prediction.userId } });
+  // Fetch user safely
+  const user = await prisma.user.findUnique({
+    where: { id: prediction.userId }
+  });
+
+  if (!user) return points;
+
+  // Chain bonuses
   if (user.currentStreak >= 5) points += 5;
   else if (user.currentStreak >= 3) points += 2;
 
   // Underdog multiplier
   const rank = await getUserRank(user.id);
-  if (rank > 0.6) points = Math.floor(points * 1.2);
+  if (rank > 0.6) {
+    points = Math.floor(points * 1.2);
+  }
 
   return Math.max(points, 0);
 }
 
 async function getUserRank(userId) {
   const totalUsers = await prisma.user.count();
-  const betterUsers = await prisma.user.count({
-    where: { points: { gt: (await prisma.user.findUnique({ where: { id: userId })).points } } }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { points: true }
   });
-  return betterUsers / totalUsers;
+
+  if (!user) return 0;
+
+  const betterUsers = await prisma.user.count({
+    where: {
+      points: {
+        gt: user.points
+      }
+    }
+  });
+
+  return totalUsers === 0 ? 0 : betterUsers / totalUsers;
 }
 
 export async function awardPoints(userId, points, matchId) {
   await prisma.user.update({
     where: { id: userId },
-    data: { points: { increment: points }, xp: { increment: points } }
+    data: {
+      points: { increment: points },
+      xp: { increment: points }
+    }
   });
 
   await prisma.prediction.updateMany({
