@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -8,40 +9,38 @@ datasource db {
 }
 
 model User {
-  id            BigInt    @id @default(autoincrement())
-  telegramId    BigInt    @unique
-  username      String?
-  firstName     String
-  lastName      String?
-  photoUrl      String?
-  languageCode  String    @default("en")
-  isPremium     Boolean   @default(false)
-  displayName   String
-  points        Int       @default(0)
-  level         Int       @default(1)
-  xp            Int       @default(0)
-  currentStreak Int       @default(0)
-  maxStreak     Int       @default(0)
-  streakShield  Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id                  BigInt               @id @default(autoincrement())
+  telegramId          BigInt               @unique
+  username            String?
+  firstName           String
+  lastName            String?
+  photoUrl            String?
+  languageCode        String               @default("en")
+  isPremium           Boolean              @default(false)
+  displayName         String
+  points              Int                  @default(0)
+  level               Int                  @default(1)
+  xp                  Int                  @default(0)
+  currentStreak       Int                  @default(0)
+  maxStreak           Int                  @default(0)
+  streakShield        Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
 
-  predictions       Prediction[]
-  leagueMemberships LeagueMembership[]
-  sentInvites       LeagueInvite[]     @relation("SentInvites")
-  receivedInvites   LeagueInvite[]     @relation("ReceivedInvites")
-  notifications     Notification[]
-  activityLogs      ActivityLog[]
-
-  // ✅ FIXED MISSING RELATIONS
-  achievements        Achievement[]
-  chatMessages        ChatMessage[]
-  friends             Friend[]             @relation("UserFriends")
-  friendOf            Friend[]             @relation("FriendOf")
-  activities          Activity[]
+  predictions        Prediction[]
+  leagueMemberships  LeagueMembership[]
+  sentInvites        LeagueInvite[]       @relation("SentInvites")
+  receivedInvites    LeagueInvite[]       @relation("ReceivedInvites")
+  notifications      Notification[]
+  activityLogs       ActivityLog[]
+  achievements       Achievement[]
+  chatMessages       ChatMessage[]
+  friends            Friend[]             @relation("UserFriends")
+  friendOf           Friend[]             @relation("FriendOf")
+  activities         Activity[]
   outrightPredictions OutrightPrediction[]
-  ownedLeagues        League[]
+  ownedLeagues       League[]
 }
 
 model Team {
@@ -57,16 +56,16 @@ model Team {
 }
 
 model Match {
-  id          Int       @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   homeTeamId  Int
   awayTeamId  Int
   kickoffTime DateTime
   stage       String
   homeScore   Int?
   awayScore   Int?
-  isCompleted Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  isCompleted Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   deletedAt   DateTime?
 
   homeTeam    Team         @relation("HomeTeam", fields: [homeTeamId], references: [id])
@@ -105,10 +104,10 @@ model League {
   createdAt  DateTime  @default(now())
   deletedAt  DateTime?
 
-  owner       User               @relation(fields: [ownerId], references: [id])
-  memberships LeagueMembership[]
-  invites     LeagueInvite[]
-  ChatMessage ChatMessage[]
+  owner        User               @relation(fields: [ownerId], references: [id])
+  memberships  LeagueMembership[]
+  invites      LeagueInvite[]
+  ChatMessage  ChatMessage[]
 }
 
 model LeagueMembership {
