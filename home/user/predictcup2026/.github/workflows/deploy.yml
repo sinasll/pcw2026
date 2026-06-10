@@ -1,0 +1,25 @@
+name: PredictCup 2026 CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint || true
+      - run: docker build -t predictcup2026 .
+      - run: docker-compose up -d
+      - name: Backup PostgreSQL
+        run: |
+          docker exec predictcup2026-db pg_dump -U predictcup predictcup2026 > backup_$(date +%F).sql
+          # Upload to S3 or storage in real production
+      - name: Health check
+        run: curl -f http://localhost:3000/health || exit 1
