@@ -1,88 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PredictCup 2026</title>
+
+  <!-- ✅ FIX: Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+
   <style>
     :root {
       --primary: #00539C;
       --success: #FFD662;
       --accent: #F2B759;
     }
-    body { font-family: system-ui, sans-serif; margin:0; padding:0; background:#f8f9fa; color:#111; }
-    header { background: var(--primary); color:white; padding:1rem; display:flex; align-items:center; justify-content:space-between; }
-    .nav { display:flex; gap:1rem; }
-    .card { background:white; border-radius:12px; padding:1.25rem; margin:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-    button { background:var(--primary); color:white; border:none; padding:0.75rem 1.5rem; border-radius:8px; cursor:pointer; font-weight:600; }
-    .success { background:var(--success); color:#111; }
-    .accent { background:var(--accent); color:#111; }
-    .rtl { direction:rtl; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8f9fa;
+      color: #111;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .rtl { direction: rtl; }
+
+    #app {
+      margin: 1rem;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 10px;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
+
 <body>
   <header>
-    <div><strong>PredictCup 2026</strong></div>
-    <div id="user-info"></div>
+    <div><strong>🏆 PredictCup 2026</strong></div>
+    <div id="user-info">Loading...</div>
   </header>
 
+  <!-- ✅ SAFE ROOT -->
+  <div id="app">Loading app...</div>
+
   <div class="card">
-    <h2>Upcoming Matches</h2>
-    <div id="matches"></div>
+    <h2>📅 Upcoming Matches</h2>
+    <div id="matches">Loading matches...</div>
   </div>
 
   <div class="card">
-    <h2>Leaderboard</h2>
-    <div id="leaderboard"></div>
+    <h2>🏆 Leaderboard</h2>
+    <div id="leaderboard">Loading leaderboard...</div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    // Full vanilla JS client with Telegram auth, RTL support, real-time Socket.IO, and clean SVG icons
-    const tg = window.Telegram.WebApp;
-    tg.ready();
+<script>
+/* -----------------------------
+   SAFE TELEGRAM INIT
+----------------------------- */
+const tg = window.Telegram?.WebApp;
 
-    const initData = tg.initData;
-    const socket = io();
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
 
-    // Language handling
-    let currentLang = 'en';
-    async function loadTranslations(lang) {
-      // Fetch from API /api/translations/:lang
-      currentLang = lang;
-      document.documentElement.lang = lang;
-      document.documentElement.dir = (lang === 'ar' || lang === 'ckb') ? 'rtl' : 'ltr';
-    }
+/* -----------------------------
+   SOCKET
+----------------------------- */
+const socket = typeof io !== "undefined" ? io() : null;
 
-    // Auth flow
-    async function authenticate() {
-      const res = await fetch('/api/auth/telegram', {
-        method: 'POST',
-        headers: { 'x-telegram-init-data': initData }
-      });
-      const data = await res.json();
-      localStorage.setItem('token', data.token);
-      document.getElementById('user-info').innerHTML = data.user.displayName;
-      return data.token;
-    }
+/* -----------------------------
+   AUTH
+----------------------------- */
+async function authenticate() {
+  try {
+    const initData = tg?.initData || "";
 
-    // Render matches and predictions (production logic continues)
-    async function loadMatches() {
-      // Production implementation fetches matches and renders clean UI
-    }
-
-    // Socket listeners for real-time updates
-    socket.on('leaderboard:update', (data) => {
-      // Update leaderboard instantly
+    const res = await fetch('/api/auth/telegram', {
+      method: 'POST',
+      headers: {
+        'x-telegram-init-data': initData
+      }
     });
 
-    // Bootstrap app
-    (async () => {
-      await authenticate();
-      await loadTranslations(tg.languageCode || 'en');
-      await loadMatches();
-    })();
-  </script>
+    const data = await res.json();
+
+    localStorage.setItem('token', data.token);
+
+    document.getElementById('user-info').innerText =
+      data.user?.displayName || "User";
+
+    return data.token;
+  } catch (err) {
+    console.error("Auth failed:", err);
+    document.getElementById('user-info').innerHTML =
+      "<span class='error'>Auth failed</span>";
+  }
+}
+
+/* -----------------------------
+   MATCHES
+----------------------------- */
+async function loadMatches() {
+  try {
+    const res = await fetch('/api/matches');
+    const data = await res.json();
+
+    const el = document.getElementById('matches');
+
+    if (!data?.length) {
+      el.innerHTML = "No matches available";
+      return;
+    }
+
+    el.innerHTML = data.map(m => `
+      <div style="padding:10px;border-bottom:1px solid #eee">
+        ⚽ ${m.homeTeam} vs ${m.awayTeam}
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error(err);
+    document.getElementById('matches').innerHTML =
+      "<span class='error'>Failed to load matches</span>";
+  }
+}
+
+/* -----------------------------
+   LEADERBOARD (placeholder)
+----------------------------- */
+function loadLeaderboard() {
+  document.getElementById('leaderboard').innerHTML =
+    "Leaderboard will appear here...";
+}
+
+/* -----------------------------
+   SOCKET EVENTS
+----------------------------- */
+if (socket) {
+  socket.on('leaderboard:update', (data) => {
+    console.log("Leaderboard update:", data);
+  });
+}
+
+/* -----------------------------
+   INIT APP (NO BLANK SCREEN EVER)
+----------------------------- */
+(async () => {
+  try {
+    document.getElementById("app").innerHTML = "Initializing...";
+
+    await authenticate();
+
+    const lang = tg?.languageCode || 'en';
+    document.documentElement.lang = lang;
+    document.documentElement.dir =
+      (lang === 'ar' || lang === 'ckb') ? 'rtl' : 'ltr';
+
+    await loadMatches();
+    loadLeaderboard();
+
+    document.getElementById("app").innerHTML =
+      "✅ App loaded successfully";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("app").innerHTML =
+      "❌ App failed to load. Check console.";
+  }
+})();
+</script>
+
 </body>
 </html>
