@@ -8,79 +8,88 @@ datasource db {
 }
 
 model User {
-  id                    BigInt    @id @default(autoincrement())
-  telegramId            BigInt    @unique
-  username              String?
-  firstName             String
-  lastName              String?
-  photoUrl              String?
-  languageCode          String    @default("en")
-  isPremium             Boolean   @default(false)
-  displayName           String
-  points                Int       @default(0)
-  level                 Int       @default(1)
-  xp                    Int       @default(0)
-  currentStreak         Int       @default(0)
-  maxStreak             Int       @default(0)
-  streakShield          Boolean   @default(false)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  deletedAt             DateTime?
+  id            BigInt    @id @default(autoincrement())
+  telegramId    BigInt    @unique
+  username      String?
+  firstName     String
+  lastName      String?
+  photoUrl      String?
+  languageCode  String    @default("en")
+  isPremium     Boolean   @default(false)
+  displayName   String
+  points        Int       @default(0)
+  level         Int       @default(1)
+  xp            Int       @default(0)
+  currentStreak Int       @default(0)
+  maxStreak     Int       @default(0)
+  streakShield  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
-  predictions           Prediction[]
-  leagueMemberships     LeagueMembership[]
-  sentInvites           LeagueInvite[]      @relation("SentInvites")
-  receivedInvites       LeagueInvite[]      @relation("ReceivedInvites")
-  notifications         Notification[]
-  activityLogs          ActivityLog[]
+  predictions       Prediction[]
+  leagueMemberships LeagueMembership[]
+  sentInvites       LeagueInvite[]     @relation("SentInvites")
+  receivedInvites   LeagueInvite[]     @relation("ReceivedInvites")
+  notifications     Notification[]
+  activityLogs      ActivityLog[]
+
+  // ✅ FIXED MISSING RELATIONS
+  achievements        Achievement[]
+  chatMessages        ChatMessage[]
+  friends             Friend[]             @relation("UserFriends")
+  friendOf            Friend[]             @relation("FriendOf")
+  activities          Activity[]
+  outrightPredictions OutrightPrediction[]
+  ownedLeagues        League[]
 }
 
 model Team {
-  id          Int      @id @default(autoincrement())
-  name        String
-  code        String   @unique
-  flag        String
-  createdAt   DateTime @default(now())
-  deletedAt   DateTime?
+  id        Int       @id @default(autoincrement())
+  name      String
+  code      String    @unique
+  flag      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
 
-  homeMatches Match[]  @relation("HomeTeam")
-  awayMatches Match[]  @relation("AwayTeam")
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
 }
 
 model Match {
-  id            Int      @id @default(autoincrement())
-  homeTeamId    Int
-  awayTeamId    Int
-  kickoffTime   DateTime
-  stage         String   // group, round_of_16, quarter_final, semi_final, final
-  homeScore     Int?
-  awayScore     Int?
-  isCompleted   Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  deletedAt     DateTime?
+  id          Int       @id @default(autoincrement())
+  homeTeamId  Int
+  awayTeamId  Int
+  kickoffTime DateTime
+  stage       String
+  homeScore   Int?
+  awayScore   Int?
+  isCompleted Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  homeTeam      Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
-  awayTeam      Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
-  predictions   Prediction[]
+  homeTeam    Team         @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team         @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  predictions Prediction[]
 
   @@index([kickoffTime])
   @@index([stage])
 }
 
 model Prediction {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   userId        BigInt
   matchId       Int
   predictedHome Int
   predictedAway Int
-  pointsAwarded Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  pointsAwarded Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
-  user          User     @relation(fields: [userId], references: [id])
-  match         Match    @relation(fields: [matchId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
 
   @@unique([userId, matchId])
   @@index([userId])
@@ -88,57 +97,58 @@ model Prediction {
 }
 
 model League {
-  id          Int      @id @default(autoincrement())
-  name        String
-  ownerId     BigInt
-  isPrivate   Boolean  @default(true)
-  inviteCode  String   @unique
-  createdAt   DateTime @default(now())
-  deletedAt   DateTime?
+  id         Int       @id @default(autoincrement())
+  name       String
+  ownerId    BigInt
+  isPrivate  Boolean   @default(true)
+  inviteCode String    @unique
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
 
   owner       User               @relation(fields: [ownerId], references: [id])
   memberships LeagueMembership[]
   invites     LeagueInvite[]
+  ChatMessage ChatMessage[]
 }
 
 model LeagueMembership {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   leagueId  Int
   userId    BigInt
-  joinedAt  DateTime @default(now())
+  joinedAt  DateTime  @default(now())
   deletedAt DateTime?
 
-  league    League   @relation(fields: [leagueId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  league League @relation(fields: [leagueId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@unique([leagueId, userId])
 }
 
 model LeagueInvite {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   leagueId   Int
   senderId   BigInt
   receiverId BigInt?
   deepLink   String
-  status     String   @default("pending")
-  createdAt  DateTime @default(now())
+  status     String    @default("pending")
+  createdAt  DateTime  @default(now())
   deletedAt  DateTime?
 
-  league     League   @relation(fields: [leagueId], references: [id])
-  sender     User     @relation("SentInvites", fields: [senderId], references: [id])
-  receiver   User?    @relation("ReceivedInvites", fields: [receiverId], references: [id])
+  league   League @relation(fields: [leagueId], references: [id])
+  sender   User   @relation("SentInvites", fields: [senderId], references: [id])
+  receiver User?  @relation("ReceivedInvites", fields: [receiverId], references: [id])
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    BigInt
   type      String
   message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
   deletedAt DateTime?
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model ActivityLog {
@@ -148,7 +158,7 @@ model ActivityLog {
   metadata  Json?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Translation {
@@ -165,13 +175,13 @@ model Translation {
 model OutrightPrediction {
   id          Int      @id @default(autoincrement())
   userId      BigInt
-  type        String   // group_winner, tournament_winner, golden_boot, best_player
+  type        String
   selectionId Int
   settled     Boolean  @default(false)
   awarded     Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, type])
 }
@@ -182,8 +192,8 @@ model Friend {
   friendId  BigInt
   createdAt DateTime @default(now())
 
-  user      User     @relation("UserFriends", fields: [userId], references: [id])
-  friend    User     @relation("FriendOf", fields: [friendId], references: [id])
+  user   User @relation("UserFriends", fields: [userId], references: [id])
+  friend User @relation("FriendOf", fields: [friendId], references: [id])
 
   @@unique([userId, friendId])
 }
@@ -195,16 +205,16 @@ model Activity {
   metadata  Json
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Achievement {
-  id          Int      @id @default(autoincrement())
-  userId      BigInt
-  badgeKey    String
-  unlockedAt  DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  userId     BigInt
+  badgeKey   String
+  unlockedAt DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, badgeKey])
 }
@@ -217,6 +227,6 @@ model ChatMessage {
   svgAsset  String?
   createdAt DateTime @default(now())
 
-  league    League   @relation(fields: [leagueId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  league League @relation(fields: [leagueId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
